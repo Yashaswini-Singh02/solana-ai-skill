@@ -1,1 +1,103 @@
-# solana-ai-skill
+# Solana Vault Standard Skill
+
+A production-grade, token-efficient AI skill that turns a coding agent (Claude
+Code, Cursor, Codex) into an expert at building **secure, automated,
+SVS-compliant DeFi vaults** on Solana.
+
+Most Solana AI tooling builds "the brains" (off-chain analytics, dashboards,
+alerts). This skill builds **"the muscle"**: the on-chain smart contract that
+custodies funds, deploys them into liquidity venues (Meteora, Orca), and
+rebalances safely without getting drained or front-run.
+
+It is built directly on the **Solana Vault Standard (SVS, sRFC 40)** — the
+ERC-4626 equivalent for Solana, maintained by Superteam Brazil and under Solana
+Foundation review: <https://github.com/solanabr/solana-vault-standard>.
+
+## What it does
+
+1. **Blueprint generator** — scaffolds SVS-compliant vaults (focus: SVS-9
+   allocator and SVS-8 multi-asset basket) with correct PDAs, share accounting,
+   and venue CPIs.
+2. **Anti-exploit guards** — a reusable security middleware (oracle deviation,
+   TWAP-vs-spot, oracle-derived `min_out`, deposit/per-tx caps, circuit-breaker)
+   wired into every value-moving instruction.
+3. **Pre-audit + formal invariants** — a Trail-of-Bits-style checklist plus
+   machine-checkable invariants (QEDGen / property tests) and an attack matrix.
+4. **Keeper/crank lifecycle** — a thin, permissioned off-chain trigger with
+   reliable transaction landing via Helius.
+5. **Assisted IDL-diff migration** — reviewable upgrades when a venue ships a
+   breaking interface change.
+
+## Architecture (progressive loading)
+
+The entry point `skill/SKILL.md` is a **router**. It reads only the focused
+sub-file(s) that match the request, so context loads on demand.
+
+```text
+.
+├── CLAUDE.md                 # when/how to load this skill
+├── install.sh                # standard installer (defaults)
+├── install-custom.sh         # custom installer (full options)
+├── skill/
+│   ├── SKILL.md              # router (entry point)
+│   ├── svs-variant-picker.md
+│   ├── meteora-dlmm-cpi.md
+│   ├── orca-whirlpool-cpi.md
+│   ├── jupiter-rebalance.md
+│   ├── guards.md
+│   ├── invariants-qedgen.md
+│   ├── trail-of-bits-checklist.md
+│   ├── keeper-crank.md
+│   ├── attack-tests.md
+│   ├── idl-diff-migration.md
+│   ├── svs-interface.md      # on-demand reference
+│   └── partners-apis.md      # on-demand reference
+├── agents/                   # vault-architect, vault-auditor
+├── commands/                 # /new-vault, /audit-vault, /migrate-cpi
+├── rules/                    # vault-safety.md behavioral lint
+└── templates/                # Anchor program, guard crate, keeper, tests
+```
+
+## Install
+
+```bash
+# Standard (installs into ./.cursor of the target project)
+./install.sh /path/to/your/project
+
+# Custom (choose what to include)
+./install-custom.sh --target /path/to/your/project --no-templates
+```
+
+Then in your agent: `/new-vault` to scaffold, `/audit-vault` before mainnet.
+
+## Ecosystem partners
+
+| Layer | Partner | Where |
+| ----- | ------- | ----- |
+| Standard / GTM | Solana Foundation, Superteam Brazil (SVS, sRFC 40) | `skill/svs-interface.md` |
+| Liquidity venues | Meteora, Orca, Raydium | `skill/meteora-dlmm-cpi.md`, `skill/orca-whirlpool-cpi.md` |
+| Swap routing | Jupiter | `skill/jupiter-rebalance.md` |
+| RPC / fees / landing / data | Helius | `skill/keeper-crank.md`, `skill/partners-apis.md` |
+| Security | Trail of Bits, QEDGen | `skill/trail-of-bits-checklist.md`, `skill/invariants-qedgen.md` |
+| Oracles | Pyth, Switchboard | `skill/guards.md` |
+| Keeper hosting | Cloudflare, Vercel | `skill/keeper-crank.md` |
+
+## Golden rules
+
+1. SVS compliance — build on `@stbr/solana-vault`, don't fork the standard.
+2. No swap/LP move without an oracle-deviation guard + oracle-derived `min_out`.
+3. Simulate before signing (keeper).
+4. Caps + pause on every vault.
+5. Attack matrix (A1-A9) + invariants (I1-I7) pass before "production-ready".
+
+## Safety & status
+
+The `templates/` are unaudited skeletons with annotated pseudo-CPIs. Pin the
+venue SDK/CPI versions you test against, fill in account contexts, and run the
+attack tests + checklist before any deployment.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The Solana Vault Standard is a separate
+open-source project; verify and honor its upstream license when vendoring its
+code.

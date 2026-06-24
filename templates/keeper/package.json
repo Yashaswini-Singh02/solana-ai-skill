@@ -1,0 +1,19 @@
+{
+  "name": "vault-keeper",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Minimal authenticated crank for an SVS allocator vault. Decides when to rebalance; the program enforces all safety.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

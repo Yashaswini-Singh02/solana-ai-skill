@@ -1,0 +1,23 @@
+[package]
+name = "vault-allocator"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "SVS-9 allocator vault: idle reserve + Meteora/Orca child allocations, Jupiter rebalancing, with anti-exploit guards."
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "vault_allocator"
+
+[features]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.31"
+anchor-spl = "0.31"
+# Add pinned venue CPI crates when wiring real integrations, e.g.:
+# meteora-dlmm-cpi = { version = "...", features = ["cpi"] }
+# whirlpools-cpi   = { version = "...", features = ["cpi"] }
+# pyth-solana-receiver-sdk = "..."

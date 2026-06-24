@@ -1,0 +1,12 @@
+[package]
+name = "vault-guards"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Reusable anti-exploit guard middleware for Solana vaults (oracle, slippage, caps, pause)."
+
+[dependencies]
+anchor-lang = "0.31"
+
+[features]
+default = []
