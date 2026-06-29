@@ -15,9 +15,9 @@ pub struct OraclePrice {
 
 /// Self-contained price-feed layout: `price: u64 | conf: u64 | publish_time: i64`
 /// (little-endian, 24 bytes). This keeps the vault deployable and testable with
-/// no external oracle dependency. For production, replace the body with a Pyth
-/// `PriceUpdateV2` / Switchboard On-Demand deserialization (the rest of the
-/// guard pipeline is unchanged).
+/// no external oracle dependency. Build `--features pyth` to swap in the real
+/// Pyth pull-oracle read below; the rest of the guard pipeline is unchanged.
+#[cfg(not(feature = "pyth"))]
 pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
     let data = oracle_ai.try_borrow_data()?;
     require!(data.len() >= 24, VaultError::StaleOracle);
@@ -25,6 +25,40 @@ pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
     let conf = u64::from_le_bytes(data[8..16].try_into().unwrap());
     let publish_time = i64::from_le_bytes(data[16..24].try_into().unwrap());
     Ok(OraclePrice { price, conf, publish_time })
+}
+
+/// Real Pyth pull-oracle read (`--features pyth`). Deserializes a
+/// `PriceUpdateV2` account, after asserting it is owned by the Pyth receiver
+/// program so an attacker cannot substitute a fake feed. Freshness and
+/// confidence are still enforced by `read_oracle` using `GuardConfig`.
+///
+/// NOTE: the returned `price` is the Pyth mantissa; its scale is set by the
+/// feed's `exponent`. Pass `pool_price` (and the in/out feeds in `oracle_quote`)
+/// in the SAME exponent so the deviation band and `min_out` math line up. For a
+/// specific feed, also bind its `feed_id` (see guards.md).
+#[cfg(feature = "pyth")]
+pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
+    use anchor_lang::AccountDeserialize;
+    use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+
+    // The feed account MUST be owned by the Pyth pull-oracle receiver program.
+    require_keys_eq!(
+        *oracle_ai.owner,
+        pyth_solana_receiver_sdk::ID,
+        VaultError::StaleOracle
+    );
+
+    let data = oracle_ai.try_borrow_data()?;
+    let update = PriceUpdateV2::try_deserialize(&mut &data[..])
+        .map_err(|_| error!(VaultError::StaleOracle))?;
+    let m = update.price_message;
+    require!(m.price > 0, VaultError::StaleOracle);
+
+    Ok(OraclePrice {
+        price: m.price.unsigned_abs(),
+        conf: m.conf,
+        publish_time: m.publish_time,
+    })
 }
 
 pub fn read_oracle(oracle_ai: &AccountInfo, cfg: &GuardConfig, now: i64) -> Result<u64> {

@@ -11,7 +11,7 @@ attack tests and the checklist in `skill/trail-of-bits-checklist.md` first.
 - `guards/` — the reusable security middleware as a standalone crate (the same
   logic is vendored inside `vault-allocator/.../guards.rs`).
 - `tests/` — LiteSVM attack-scenario test stubs (A1–A9) plus runnable invariant
-  property tests (`invariants.rs` + `Cargo.toml`).
+  property tests for **I1–I7** (`invariants.rs` + `Cargo.toml`).
 - `keeper/` — minimal authenticated TypeScript crank using Helius for landing.
 
 These are MIT-licensed like the rest of the kit.
@@ -50,9 +50,12 @@ anchor build --no-idl -- --tools-version v1.50 -- --locked
 2. Or commit a `Cargo.lock` with the pins above so downstream builds are
    reproducible.
 
-### Run the invariant tests
+### Run the tests
 
 ```bash
-cd tests
-cargo test            # property tests I1/I4 over the share-math model
+cd guards && cargo test   # attack matrix A1–A9 over the guard cores
+cd ../tests && cargo test # invariant property tests I1–I7
 ```
+
+Both run in CI on every push/PR (`.github/workflows/ci.yml`); they are
+dependency-light and finish in seconds, so the "tested" claim is reproducible.

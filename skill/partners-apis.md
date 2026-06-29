@@ -17,7 +17,9 @@ Used by: `keeper-crank.md` (fees, landing, webhooks/LaserStream).
 
 ## Jupiter — swap aggregation
 
-- Quote API: `GET https://quote-api.jup.ag/v6/quote?inputMint=&outputMint=&amount=&slippageBps=`
+- Quote API: `GET https://lite-api.jup.ag/swap/v1/quote?inputMint=&outputMint=&amount=&slippageBps=`
+  (free host; use `https://api.jup.ag/swap/v1` with an API key. The old
+  `quote-api.jup.ag/v6` host is retired.)
 - Swap/instructions API to build the swap; or CPI the aggregator program.
 - Use `restrictIntermediateTokens=true`. Treat API slippage as a UX hint only;
   the program enforces an oracle-derived `min_out`.
@@ -73,7 +75,7 @@ Used by: `guards.md`, `invariants-qedgen.md`.
 
 ```bash
 HELIUS_RPC_URL=        # https://mainnet.helius-rpc.com/?api-key=...
-JUPITER_BASE_URL=      # https://quote-api.jup.ag/v6
+JUPITER_BASE_URL=      # https://lite-api.jup.ag/swap/v1 (or https://api.jup.ag/swap/v1 with key)
 ORACLE_FEED=           # Pyth price update account
 KEEPER_KEYPAIR=        # path/secret for crank-only signer
 VAULT_ADDRESS=         # target vault

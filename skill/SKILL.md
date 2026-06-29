@@ -76,6 +76,6 @@ Working skeletons live in `../templates/`:
 - Anchor `0.31.x`, Rust edition 2021, Solana `2.x` (Agave).
 - `@stbr/solana-vault` SDK for SVS account model and preview functions.
 - Pyth pull oracle (or Switchboard On-Demand) for price guards.
-- Jupiter v6 swap API for ratio rebalancing.
+- Jupiter Swap API (`lite-api.jup.ag/swap/v1`) for ratio rebalancing.
 - Helius for priority fees, transaction landing, and webhooks/LaserStream.
 - LiteSVM / `anchor-bankrun` for fast, deterministic tests.

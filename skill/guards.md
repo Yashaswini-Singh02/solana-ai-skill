@@ -35,15 +35,46 @@ pub struct GuardConfig {
 
 ```rust
 pub fn read_oracle(ai: &AccountInfo, cfg: &GuardConfig, now: i64) -> Result<u64> {
-    // Pyth pull-oracle: deserialize PriceUpdateV2, get price + conf + publish_time
-    let price = pyth_get_price(ai)?;                 // pseudo
-    require!(now - price.publish_time <= cfg.max_staleness_secs as i64,
+    let p = read_oracle_raw(ai)?;                    // self-contained OR Pyth (below)
+    require!(now.saturating_sub(p.publish_time) <= cfg.max_staleness_secs as i64,
              VaultError::StaleOracle);
-    let conf_bps = (price.conf as u128 * 10_000 / price.price.unsigned_abs() as u128) as u16;
-    require!(conf_bps <= cfg.max_conf_bps, VaultError::OracleUncertain);
-    Ok(normalize_price(price))                       // to fixed-point asset terms
+    let conf_bps = (p.conf as u128) * 10_000 / p.price.max(1) as u128;
+    require!(conf_bps as u16 <= cfg.max_conf_bps, VaultError::OracleUncertain);
+    Ok(p.price)
 }
 ```
+
+### Real Pyth pull-oracle read (production)
+
+The templates ship a self-contained 24-byte feed by default so the vault builds
+with no external oracle. Flip on the real Pyth read with the `pyth` feature
+(`pyth-solana-receiver-sdk` 1.0.1, which pins `anchor-lang ^0.31.1`):
+
+```bash
+anchor build -- --features pyth
+```
+
+```rust
+// templates/vault-allocator/.../guards.rs  (#[cfg(feature = "pyth")])
+use anchor_lang::AccountDeserialize;
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+
+pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
+    // Owner MUST be the Pyth receiver program, or an attacker substitutes a feed.
+    require_keys_eq!(*oracle_ai.owner, pyth_solana_receiver_sdk::ID, VaultError::StaleOracle);
+    let data = oracle_ai.try_borrow_data()?;
+    let update = PriceUpdateV2::try_deserialize(&mut &data[..])
+        .map_err(|_| error!(VaultError::StaleOracle))?;
+    let m = update.price_message;                    // price (i64), conf (u64), publish_time
+    require!(m.price > 0, VaultError::StaleOracle);
+    Ok(OraclePrice { price: m.price.unsigned_abs(), conf: m.conf, publish_time: m.publish_time })
+}
+```
+
+Exponent: the Pyth `price` is a mantissa scaled by the feed `exponent`. Pass
+`pool_price` and the in/out feeds (in `oracle_quote`) at the **same** exponent so
+the deviation band and `min_out` floor compare like-for-like. Bind the feed's
+`feed_id` (`get_feed_id_from_hex`) when you need a specific market.
 
 ## Guard 2: pool spot vs oracle deviation band
 

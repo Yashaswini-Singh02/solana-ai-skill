@@ -49,22 +49,28 @@ favor). Auditors check this.
 
 ## SDK usage (TypeScript)
 
+`@stbr/solana-vault` v2 ships a typed class per variant — `SolanaVault` (SVS-1),
+`NativeSolVault` (SVS-7), `BasketVault` (SVS-8), `AllocatorVault` (SVS-9),
+`AsyncVault` (SVS-10), `CreditVault` (SVS-11), `TranchedVault` (SVS-12), plus
+`StreamingVault` and the `ManagedVault` stored-balance base.
+
 ```ts
-import { SolanaVault, ManagedVault } from "@stbr/solana-vault";
+import { SolanaVault, AllocatorVault } from "@stbr/solana-vault";
 
 // SVS-1 (live): assets stay in the vault ATA
 const vault = new SolanaVault(connection, vaultAddress);
 await vault.deposit(user, amount);
 
-// SVS-2 / SVS-9 (stored): assets deployed elsewhere; authority syncs NAV
-const managed = new ManagedVault(connection, vaultAddress);
-await managed.sync(authority);   // recompute NAV before deposits/withdrawals
-const shares = await managed.previewDeposit(amount);
+// SVS-9 (allocator, stored): assets deployed to venues; authority syncs NAV
+const allocator = new AllocatorVault(connection, vaultAddress);
+await allocator.sync(authority);   // recompute NAV before deposits/withdrawals
+const shares = await allocator.previewDeposit(amount);
 ```
 
-Use `ManagedVault` (stored balance) for allocator/yield-aggregator vaults where
-assets leave the vault ATA — which is exactly the Meteora+Orca case. Use
-`SolanaVault` (live balance) only when assets never leave the vault ATA.
+Use `AllocatorVault` (SVS-9) for the Meteora+Orca allocator case and `BasketVault`
+(SVS-8) for an oracle-weighted basket — both are stored-balance vaults (they
+extend `ManagedVault`) where assets leave the vault ATA. Use `SolanaVault` (live
+balance) only when assets never leave the vault ATA.
 
 ## Account model expectations
 

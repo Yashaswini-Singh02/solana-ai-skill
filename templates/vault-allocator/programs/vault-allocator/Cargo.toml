@@ -13,11 +13,16 @@ name = "vault_allocator"
 no-entrypoint = []
 cpi = ["no-entrypoint"]
 default = []
+# Enable a real Pyth pull-oracle (`PriceUpdateV2`) read in guards.rs:
+#   anchor build -- --features pyth
+pyth = ["dep:pyth-solana-receiver-sdk"]
 
 [dependencies]
 anchor-lang = "0.31"
 anchor-spl = "0.31"
+# Real Pyth pull-oracle SDK; 1.0.1 pins anchor-lang ^0.31.1 (matches above).
+# Optional + off by default so the skeleton builds with zero external oracle.
+pyth-solana-receiver-sdk = { version = "1.0.1", optional = true }
 # Add pinned venue CPI crates when wiring real integrations, e.g.:
 # meteora-dlmm-cpi = { version = "...", features = ["cpi"] }
 # whirlpools-cpi   = { version = "...", features = ["cpi"] }
-# pyth-solana-receiver-sdk = "..."

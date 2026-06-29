@@ -1,5 +1,8 @@
 # Solana Vault Standard Skill
 
+[![CI](https://github.com/Yashaswini-Singh02/solana-ai-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Yashaswini-Singh02/solana-ai-skill/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A production-grade, token-efficient AI skill that turns a coding agent (Claude
 Code, Cursor, Codex) into an expert at building **secure, automated,
 SVS-compliant DeFi vaults** on Solana.
@@ -95,6 +98,18 @@ Then in your agent: `/new-vault` to scaffold, `/audit-vault` before mainnet.
 3. Simulate before signing (keeper).
 4. Caps + pause on every vault.
 5. Attack matrix (A1-A9) + invariants (I1-I7) pass before "production-ready".
+
+## Testing
+
+The security logic is runnable and tested in CI (`.github/workflows/ci.yml`):
+
+- `templates/guards/` — attack matrix **A1–A9** over the guard cores (`cargo test`).
+- `templates/tests/` — property tests for invariants **I1–I7** (`cargo test`).
+- `templates/keeper/` — type-checked (`tsc --noEmit`).
+
+By default the program reads a self-contained oracle feed so it builds with zero
+external dependencies; build `--features pyth` for a real Pyth pull-oracle
+(`PriceUpdateV2`) read (see `skill/guards.md`).
 
 ## Safety & status
 

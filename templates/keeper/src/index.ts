@@ -18,7 +18,7 @@ import {
 } from "@solana/web3.js";
 
 const HELIUS_RPC_URL = required("HELIUS_RPC_URL");
-const JUPITER_BASE_URL = process.env.JUPITER_BASE_URL ?? "https://quote-api.jup.ag/v6";
+const JUPITER_BASE_URL = process.env.JUPITER_BASE_URL ?? "https://lite-api.jup.ag/swap/v1";
 const POLL_MS = Number(process.env.POLL_MS ?? 30_000);
 
 const conn = new Connection(HELIUS_RPC_URL, "confirmed");
@@ -101,8 +101,8 @@ async function heliusPriorityFee(tx: Transaction): Promise<number> {
       params: [{ transaction: serialized, options: { recommended: true } }],
     }),
   });
-  const j = await r.json();
-  return Math.max(1, Math.floor(j?.result?.priorityFeeEstimate ?? 1));
+  const j = (await r.json()) as { result?: { priorityFeeEstimate?: number } };
+  return Math.max(1, Math.floor(j.result?.priorityFeeEstimate ?? 1));
 }
 
 async function jupiterQuote(inMint: string, outMint: string, amount: bigint, slippageBps: number) {
@@ -110,7 +110,7 @@ async function jupiterQuote(inMint: string, outMint: string, amount: bigint, sli
     `&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`jupiter quote failed: ${r.status}`);
-  return r.json();
+  return (await r.json()) as { outAmount: string };
 }
 
 // ---- stubs you implement against your deployed program ----

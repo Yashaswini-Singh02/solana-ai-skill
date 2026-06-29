@@ -4,7 +4,10 @@ When the vault needs to change its token ratio (e.g. it closed a position and
 holds 100% token X but the target is 50/50), it swaps via Jupiter. This is the
 proven pattern for in-vault rebalancing.
 
-Jupiter v6 swap API: <https://station.jup.ag/docs/apis/swap-api>
+Jupiter Swap API: <https://dev.jup.ag/docs/swap-api/get-quote>
+Host: `https://lite-api.jup.ag/swap/v1` (free, no key) or `https://api.jup.ag/swap/v1`
+(with an API key via the Jupiter portal). The legacy `quote-api.jup.ag/v6` host is
+retired — do not use it.
 
 ## Architecture: quote off-chain, execute on-chain (guarded)
 
@@ -70,7 +73,7 @@ the swap and the LP move are in the same transaction or bundle.
 
 ```ts
 const quote = await (await fetch(
-  `https://quote-api.jup.ag/v6/quote?inputMint=${inMint}&outputMint=${outMint}` +
+  `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inMint}&outputMint=${outMint}` +
   `&amount=${amountIn}&slippageBps=${slippageBps}&restrictIntermediateTokens=true`
 )).json();
 // Pass quote.outAmount-derived min_out into the program; the program re-checks

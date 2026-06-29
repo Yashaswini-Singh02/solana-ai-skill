@@ -172,7 +172,12 @@ pub fn check_keeper(signer: &Pubkey, keeper: &Pubkey) -> core::result::Result<()
 // ---------------------------------------------------------------------------
 
 /// Self-contained feed layout: `price|conf|publish_time` LE (24 bytes).
-/// Replace with Pyth/Switchboard deserialization for production.
+///
+/// For production, swap this for a real Pyth pull-oracle read. The deployable
+/// program template ships exactly that behind a `pyth` feature — see
+/// `templates/vault-allocator/.../guards.rs` (`#[cfg(feature = "pyth")]`) and
+/// `skill/guards.md`. The pure cores above (`check_oracle`, `check_pool_sane`,
+/// `min_out_floor_bps`, …) are oracle-agnostic and stay unchanged.
 pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
     let data = oracle_ai.try_borrow_data()?;
     require!(data.len() >= 24, GuardError::StaleOracle);

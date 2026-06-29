@@ -1,0 +1,70 @@
+name: ci
+
+# Proves the "tested" claim: the pure guard cores (attack matrix A1-A9) and the
+# invariant property tests (I1-I7) run on every push/PR. These are dependency-
+# light (anchor-lang for guards, proptest for invariants) and finish in seconds.
+# The Anchor SBF build is exercised best-effort and is non-blocking, because the
+# Solana platform-tools toolchain lags `edition2024` (see templates/README.md).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  rust-tests:
+    name: rust tests (guards A1-A9 + invariants I1-I7)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
+
+      - name: Guards — attack matrix A1-A9
+        working-directory: templates/guards
+        run: cargo test --locked
+
+      - name: Invariants — property tests I1-I7
+        working-directory: templates/tests
+        run: cargo test --locked
+
+  keeper-typecheck:
+    name: keeper typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Typecheck keeper
+        working-directory: templates/keeper
+        run: |
+          npm install --no-audit --no-fund
+          npx tsc --noEmit
+
+  anchor-build:
+    name: anchor build (best-effort, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Solana + Anchor
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          avm install 0.31.1 && avm use 0.31.1
+      - name: anchor build
+        working-directory: templates/vault-allocator
+        run: anchor build

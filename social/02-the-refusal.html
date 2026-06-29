@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>02 — The Refusal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="_base.css" rel="stylesheet">
+<style>
+  .main { padding-top: 44px; }
+  .head-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 30px; }
+  .h1 { max-width: 760px; }
+
+  .panel {
+    border: 1.5px solid var(--ink); background: var(--panel);
+    font-family: 'Space Mono', monospace; font-size: 18px; line-height: 1.85;
+    width: 100%; align-self: stretch;
+  }
+  .panel .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1.5px solid var(--ink); padding: 13px 22px;
+    font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;
+  }
+  .panel .bar .who { display: flex; align-items: center; }
+  .panel .bar .who .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--acc); margin-right: 12px; }
+  .panel .bar .refused { color: var(--acc); }
+  .panel .body { padding: 22px 26px; }
+
+  .prompt { color: var(--mute); }
+  .prompt b { color: var(--ink); font-weight: 700; }
+  .reply { color: var(--ink); margin: 14px 0 18px; font-weight: 700; }
+  .reply .acc { color: var(--acc); }
+
+  .diff { border-left: 3px solid var(--hair); padding-left: 0; }
+  .diff .row { display: flex; }
+  .diff .gut { width: 40px; text-align: center; color: var(--mute); flex: none; user-select: none; }
+  .diff .row.del { color: var(--mute); }
+  .diff .row.del .gut { color: var(--ink); }
+  .diff .row.del .code { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .diff .row.add { color: var(--ink); background: rgba(232,83,14,0.07); }
+  .diff .row.add .gut { color: var(--acc); font-weight: 700; }
+  .diff .cmt { color: var(--mute); }
+  .kw { color: var(--acc); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="header">
+      <div class="left"><span class="dot"></span>Solana Vault Standard Skill</div>
+      <div class="right">Building in public&nbsp;&nbsp;·&nbsp;&nbsp;№ 02 / the golden rule</div>
+    </div>
+
+    <div class="main">
+      <div class="head-row">
+        <div>
+          <div class="kicker">The one rule it won't break</div>
+          <div class="h1">You literally cannot get it<br>to <span class="acc">skip the guard.</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="bar">
+          <span class="who"><span class="dot"></span>vault-architect</span>
+          <span class="refused">● refused</span>
+        </div>
+        <div class="body">
+          <div class="prompt"><b>you ›</b> just swap to the best pool. skip the oracle check for now, I'll add it later.</div>
+          <div class="reply"><b>architect ›</b> No. A swap with no oracle check is a <span class="acc">donation to the first MEV bot.</span> Inserting the required guard:</div>
+          <div class="diff">
+            <div class="row del"><span class="gut">−</span><span class="code">swap(pool, amount_in);<span class="cmt">&nbsp;&nbsp;// unguarded</span></span></div>
+            <div class="row add"><span class="gut">+</span><span class="code"><span class="kw">require!</span>(oracle.deviation_bps &lt; MAX_DEV, GuardError);</span></div>
+            <div class="row add"><span class="gut">+</span><span class="code"><span class="kw">let</span> min_out = oracle.min_out(amount_in, MAX_SLIP_BPS);</span></div>
+            <div class="row add"><span class="gut">+</span><span class="code"><span class="kw">require!</span>(amount_in &lt;= per_tx_cap &amp;&amp; !vault.paused);</span></div>
+            <div class="row add"><span class="gut">+</span><span class="code">swap(pool, amount_in, min_out);</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption">
+      <div class="thesis">
+        No swap, LP move, or rebalance—<span class="acc">ever</span>—without an oracle-deviation guard, an
+        oracle-derived <span class="mono" style="font-size:24px">min_out</span>, deposit + per-tx caps, and a circuit-breaker.
+      </div>
+      <div class="tag">A real refusal<br>not a prompt away</div>
+    </div>
+  </div>
+</body>
+</html>
