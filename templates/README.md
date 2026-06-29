@@ -38,6 +38,9 @@ The Solana SBF platform-tools bundle an older Rust (1.79 in `v1.43`, 1.84 in
 1. Use newer platform-tools (Rust 1.84) and pin the offending crates:
 
 ```bash
+cargo generate-lockfile
+cargo update -p block-buffer         --precise 0.10.4
+cargo update -p crypto-common        --precise 0.1.6
 cargo update -p proc-macro-crate@3.5.0 --precise 3.2.0
 cargo update -p zeroize              --precise 1.8.1
 cargo update -p zeroize_derive       --precise 1.4.2
@@ -46,6 +49,12 @@ cargo update -p indexmap             --precise 2.7.1
 cargo update -p unicode-segmentation --precise 1.12.0
 anchor build --no-idl -- --tools-version v1.50 -- --locked
 ```
+
+The exact crate set drifts as upstream releases new `edition2024` versions
+(`block-buffer 0.12` is the latest to bite). When a fresh
+`feature 'edition2024' is required` appears for some `<crate>`, add
+`cargo update -p <crate> --precise <last-pre-2024-version>` to the list above
+and to `.github/workflows/ci.yml`.
 
 2. Or commit a `Cargo.lock` with the pins above so downstream builds are
    reproducible.
