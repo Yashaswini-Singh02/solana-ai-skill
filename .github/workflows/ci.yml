@@ -68,10 +68,10 @@ jobs:
       # The Solana SBF platform-tools ship an older Rust than several current
       # transitive crates, which now require `edition2024` (Rust 1.85). A clean
       # resolve fails with "feature `edition2024` is required". We pin those
-      # crates back to their last pre-edition2024 release, then build against the
-      # newer v1.50 platform-tools (Rust 1.84). Keep this list in sync with
-      # templates/README.md. If a committed Cargo.lock exists, --locked uses it
-      # and these no-op.
+      # crates back to their last pre-edition2024 release so the bundled tools
+      # (platform-tools 2.x, installed above) can build them. Keep this list in
+      # sync with templates/README.md. If a committed Cargo.lock exists,
+      # --locked uses it and these no-op.
       - name: Pin edition2024 transitive crates
         working-directory: templates/vault-allocator
         run: |
@@ -87,4 +87,4 @@ jobs:
           pin unicode-segmentation  1.12.0
       - name: anchor build
         working-directory: templates/vault-allocator
-        run: anchor build --no-idl -- --tools-version v1.50 -- --locked
+        run: anchor build --no-idl -- -- --locked

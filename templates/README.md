@@ -30,12 +30,12 @@ anchor build                      # SBF bytecode -> target/deploy/*.so
 
 ### Known build snag: `edition2024` / toolchain too old
 
-The Solana SBF platform-tools bundle an older Rust (1.79 in `v1.43`, 1.84 in
-`v1.50`) than several current transitive crates, which now require Rust 1.85
-(`edition2024`). A clean build today fails with
-`feature 'edition2024' is required`. Two fixes:
+The Solana SBF platform-tools bundle an older Rust than several current
+transitive crates, which now require Rust 1.85 (`edition2024`). A clean build
+today fails with `feature 'edition2024' is required`. Two fixes:
 
-1. Use newer platform-tools (Rust 1.84) and pin the offending crates:
+1. Install recent platform-tools (the Anza `stable` installer ships 2.x) and
+   pin the offending crates back to their last pre-`edition2024` release:
 
 ```bash
 cargo generate-lockfile
@@ -47,8 +47,12 @@ cargo update -p zeroize_derive       --precise 1.4.2
 cargo update -p blake3               --precise 1.5.5
 cargo update -p indexmap             --precise 2.7.1
 cargo update -p unicode-segmentation --precise 1.12.0
-anchor build --no-idl -- --tools-version v1.50 -- --locked
+anchor build --no-idl -- -- --locked
 ```
+
+> Don't pass `--tools-version v1.50` to a 2.x toolchain — that bundle id no
+> longer resolves and `cargo-build-sbf` panics with `NotFound`. Use the tools
+> the installer ships, and pin crates instead of downgrading the toolchain.
 
 The exact crate set drifts as upstream releases new `edition2024` versions
 (`block-buffer 0.12` is the latest to bite). When a fresh
