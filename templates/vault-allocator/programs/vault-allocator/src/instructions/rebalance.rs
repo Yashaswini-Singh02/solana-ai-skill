@@ -64,11 +64,20 @@ pub struct RebalanceSwap<'info> {
     // remaining_accounts: full Jupiter route account list.
 }
 
-pub fn rebalance_swap(ctx: Context<RebalanceSwap>, amount_in: u64, min_out: u64) -> Result<()> {
+pub fn rebalance_swap(ctx: Context<RebalanceSwap>, amount_in: u64, min_out: u64, pool_price: u64) -> Result<()> {
     let vault = &ctx.accounts.vault;
     require!(!vault.paused, VaultError::Paused);
     guards::assert_keeper(&ctx.accounts.cranker.key(), &vault.guard)?;
+    require!(amount_in > 0, VaultError::ZeroAmount);
     require!(amount_in <= vault.per_tx_cap, VaultError::CapExceeded);
+
+    // Guard 2: reject if the venue/pool spot deviates from the oracle beyond the
+    // allowed band (flash-loan / pool-manipulation defense). See guards.md (A1).
+    guards::assert_pool_price_sane(
+        &ctx.accounts.oracle_in.to_account_info(),
+        pool_price,
+        &vault.guard,
+    )?;
 
     // Guard 3: oracle-derived min_out floor. The keeper's quote is NOT trusted.
     let fair_out = guards::oracle_quote(

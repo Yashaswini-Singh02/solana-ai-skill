@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
 # Standard installer for the Solana Vault Standard Skill.
-# Installs the skill into a target project's agent config with sensible defaults.
+#
+# Installs a self-contained, auto-discoverable skill so agentic IDEs register it
+# natively at `<config>/skills/solana-vault-standard/SKILL.md`. Installs for both
+# Claude Code (`.claude/skills/`) and Cursor (`.cursor/skills/`), and drops a
+# CLAUDE.md router at the project root as a universal fallback.
 #
 # Usage:
 #   ./install.sh [TARGET_DIR]
 #
-# Defaults: TARGET_DIR = current directory. Installs skill/, agents/, commands/,
-# and rules/ under <TARGET_DIR>/.cursor/ (and symlinks CLAUDE.md). Zero external
-# dependencies — pure file copy.
+# Defaults: TARGET_DIR = current directory. Zero external dependencies.
 
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${1:-$PWD}"
 
-DEST="$TARGET_DIR/.cursor"
-echo "Installing Solana Vault Standard Skill into: $DEST"
+# shellcheck source=install-common.sh
+. "$SRC_DIR/install-common.sh"
 
-mkdir -p "$DEST"
-for d in skill agents commands rules templates; do
-  mkdir -p "$DEST/$d"
-  cp -R "$SRC_DIR/$d/." "$DEST/$d/"
+echo "Installing the Solana Vault Standard Skill into: $TARGET_DIR"
+
+# Each agentic IDE that auto-discovers skills at <config>/skills/<name>/.
+for cfg in .claude .cursor; do
+  svs_install_skill "$SRC_DIR" "$TARGET_DIR/$cfg/skills"
 done
 
-# Make the CLAUDE.md config discoverable at the project root if absent.
-if [ ! -f "$TARGET_DIR/CLAUDE.md" ]; then
-  cp "$SRC_DIR/CLAUDE.md" "$TARGET_DIR/CLAUDE.md"
-  echo "Wrote $TARGET_DIR/CLAUDE.md"
-fi
+svs_install_router "$SRC_DIR" "$TARGET_DIR"
 
-echo "Done. Entry point: $DEST/skill/SKILL.md"
+echo "Done. Registered as the '$SKILL_NAME' skill for Claude Code and Cursor."
+echo "Entry point: <config>/skills/$SKILL_NAME/SKILL.md"
 echo "Try the command: /new-vault"

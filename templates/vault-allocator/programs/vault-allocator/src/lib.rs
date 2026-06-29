@@ -21,7 +21,7 @@ pub mod instructions;
 
 use instructions::*;
 
-declare_id!("Vau1tA11ocator1111111111111111111111111111");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod vault_allocator {
@@ -47,8 +47,8 @@ pub mod vault_allocator {
     }
 
     /// Rebalance token ratio via Jupiter. Keeper-gated + guarded.
-    pub fn rebalance_swap(ctx: Context<RebalanceSwap>, amount_in: u64, min_out: u64) -> Result<()> {
-        instructions::rebalance_swap(ctx, amount_in, min_out)
+    pub fn rebalance_swap(ctx: Context<RebalanceSwap>, amount_in: u64, min_out: u64, pool_price: u64) -> Result<()> {
+        instructions::rebalance_swap(ctx, amount_in, min_out, pool_price)
     }
 
     /// Admin circuit breaker.

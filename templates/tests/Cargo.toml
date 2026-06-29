@@ -1,0 +1,17 @@
+# Standalone manifest so the invariant property tests run with `cargo test`
+# without being absorbed into a parent Anchor workspace. The empty [workspace]
+# table keeps this crate independent if it's copied inside a vault workspace.
+[workspace]
+
+[package]
+name = "vault-invariants"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+proptest = "1"
+
+[[test]]
+name = "invariants"
+path = "invariants.rs"

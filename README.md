@@ -38,6 +38,7 @@ sub-file(s) that match the request, so context loads on demand.
 ├── CLAUDE.md                 # when/how to load this skill
 ├── install.sh                # standard installer (defaults)
 ├── install-custom.sh         # custom installer (full options)
+├── install-common.sh         # shared installer helpers
 ├── skill/
 │   ├── SKILL.md              # router (entry point)
 │   ├── svs-variant-picker.md
@@ -60,12 +61,17 @@ sub-file(s) that match the request, so context loads on demand.
 
 ## Install
 
+The installer builds a self-contained, **auto-discoverable** skill at
+`<config>/skills/solana-vault-standard/SKILL.md`, so agentic IDEs register it
+natively — Claude Code (`.claude/skills/`) and Cursor (`.cursor/skills/`). A
+`CLAUDE.md` router is also dropped at the project root as a universal fallback.
+
 ```bash
-# Standard (installs into ./.cursor of the target project)
+# Standard (registers the skill for Claude Code + Cursor)
 ./install.sh /path/to/your/project
 
-# Custom (choose what to include)
-./install-custom.sh --target /path/to/your/project --no-templates
+# Custom (pick IDEs and what to bundle)
+./install-custom.sh --target /path/to/your/project --ide cursor --no-templates
 ```
 
 Then in your agent: `/new-vault` to scaffold, `/audit-vault` before mainnet.

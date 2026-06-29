@@ -13,12 +13,18 @@ pub struct OraclePrice {
     pub publish_time: i64,
 }
 
-/// STUB: implement for Pyth `PriceUpdateV2` or Switchboard On-Demand.
-pub fn read_oracle_raw(_oracle_ai: &AccountInfo) -> Result<OraclePrice> {
-    // Pyth pull-oracle example (pseudocode):
-    //   let upd = PriceUpdateV2::try_deserialize(&mut &_oracle_ai.data.borrow()[..])?;
-    //   let p = upd.price_message; // price, conf, publish_time
-    err!(VaultError::StaleOracle)
+/// Self-contained price-feed layout: `price: u64 | conf: u64 | publish_time: i64`
+/// (little-endian, 24 bytes). This keeps the vault deployable and testable with
+/// no external oracle dependency. For production, replace the body with a Pyth
+/// `PriceUpdateV2` / Switchboard On-Demand deserialization (the rest of the
+/// guard pipeline is unchanged).
+pub fn read_oracle_raw(oracle_ai: &AccountInfo) -> Result<OraclePrice> {
+    let data = oracle_ai.try_borrow_data()?;
+    require!(data.len() >= 24, VaultError::StaleOracle);
+    let price = u64::from_le_bytes(data[0..8].try_into().unwrap());
+    let conf = u64::from_le_bytes(data[8..16].try_into().unwrap());
+    let publish_time = i64::from_le_bytes(data[16..24].try_into().unwrap());
+    Ok(OraclePrice { price, conf, publish_time })
 }
 
 pub fn read_oracle(oracle_ai: &AccountInfo, cfg: &GuardConfig, now: i64) -> Result<u64> {

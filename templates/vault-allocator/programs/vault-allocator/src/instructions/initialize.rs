@@ -67,7 +67,8 @@ pub fn initialize(ctx: Context<Initialize>, params: InitializeParams) -> Result<
     vault.bump = ctx.bumps.vault;
     vault.auth_bump = ctx.bumps.vault_authority;
 
-    // TODO (anti-inflation): seed dead shares here by minting a tiny amount to a
-    // burn address and recording stored_assets accordingly. See guards.md / A5.
+    // Anti-inflation (A5): handled by the virtual-share/asset offset in
+    // `Vault::shares_for_deposit` + NAV from `stored_assets` (never the raw ATA
+    // balance), so no separate dead-shares seeding is required. See state/mod.rs.
     Ok(())
 }

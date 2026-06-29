@@ -35,6 +35,14 @@ pub struct Vault {
     pub auth_bump: u8,
 }
 
+/// Virtual-offset constants for first-deposit / donation inflation protection
+/// (OpenZeppelin ERC-4626 style). Combined with NAV from `stored_assets` (never
+/// the raw ATA balance), these neutralize attack A5: a tiny first deposit can no
+/// longer round a later victim's shares down to zero, and a direct ATA donation
+/// does not change the share price. See guards.md / attack-tests.md (A5).
+pub const VIRTUAL_SHARES: u128 = 1_000_000;
+pub const VIRTUAL_ASSETS: u128 = 1;
+
 impl Vault {
     // discriminator + fields; recompute if you change the struct.
     pub const SIZE: usize = 8
@@ -45,22 +53,16 @@ impl Vault {
         + (1 + 8 + 8) * MAX_VENUES         // allocations
         + 1 + 1;
 
-    /// ERC-4626-style: shares minted for `assets` at current NAV.
-    /// Rounds DOWN (favors the vault). First deposit is 1:1.
+    /// ERC-4626-style with virtual offset: shares minted for `assets` at current
+    /// NAV. Rounds DOWN (favors the vault).
     pub fn shares_for_deposit(&self, assets: u64) -> Option<u64> {
-        if self.total_shares == 0 || self.stored_assets == 0 {
-            Some(assets)
-        } else {
-            Some(((assets as u128) * (self.total_shares as u128) / (self.stored_assets as u128)) as u64)
-        }
+        let num = (assets as u128).checked_mul(self.total_shares as u128 + VIRTUAL_SHARES)?;
+        Some((num / (self.stored_assets as u128 + VIRTUAL_ASSETS)) as u64)
     }
 
     /// Assets returned for `shares` at current NAV. Rounds DOWN (favors vault).
     pub fn assets_for_shares(&self, shares: u64) -> Option<u64> {
-        if self.total_shares == 0 {
-            Some(0)
-        } else {
-            Some(((shares as u128) * (self.stored_assets as u128) / (self.total_shares as u128)) as u64)
-        }
+        let num = (shares as u128).checked_mul(self.stored_assets as u128 + VIRTUAL_ASSETS)?;
+        Some((num / (self.total_shares as u128 + VIRTUAL_SHARES)) as u64)
     }
 }

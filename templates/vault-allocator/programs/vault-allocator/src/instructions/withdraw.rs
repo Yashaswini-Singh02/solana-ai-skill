@@ -48,6 +48,10 @@ pub fn withdraw(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
     let assets = vault.assets_for_shares(shares).ok_or(VaultError::MathOverflow)?;
     require!(assets > 0, VaultError::ZeroAmount);
 
+    // Cap consistency: bound the per-transaction withdrawal like every other
+    // value-moving instruction (guards.md Guard 4 / A7).
+    require!(assets <= vault.per_tx_cap, VaultError::CapExceeded);
+
     // NOTE: if idle reserve < assets, the keeper must first withdraw from venues
     // (Meteora/Orca) so the vault ATA holds enough. A production impl exposes a
     // queued/async path (SVS-10) for large withdrawals. Here we require liquidity.

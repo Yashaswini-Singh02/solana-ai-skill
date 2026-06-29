@@ -15,20 +15,16 @@ mod tests {
         stored_assets: u128,
     }
 
+    // Virtual offset (anti-inflation), mirrors guards/state share math.
+    const VIRTUAL_SHARES: u128 = 1_000_000;
+    const VIRTUAL_ASSETS: u128 = 1;
+
     impl Model {
         fn shares_for_deposit(&self, assets: u128) -> u128 {
-            if self.total_shares == 0 || self.stored_assets == 0 {
-                assets
-            } else {
-                assets * self.total_shares / self.stored_assets
-            }
+            assets * (self.total_shares + VIRTUAL_SHARES) / (self.stored_assets + VIRTUAL_ASSETS)
         }
         fn assets_for_shares(&self, shares: u128) -> u128 {
-            if self.total_shares == 0 {
-                0
-            } else {
-                shares * self.stored_assets / self.total_shares
-            }
+            shares * (self.stored_assets + VIRTUAL_ASSETS) / (self.total_shares + VIRTUAL_SHARES)
         }
         fn deposit(&mut self, assets: u128) -> u128 {
             let s = self.shares_for_deposit(assets);
