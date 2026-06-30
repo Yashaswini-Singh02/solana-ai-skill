@@ -52,10 +52,22 @@ anchor build --no-idl -- -- --locked   # uses the committed Cargo.lock
 
 #### Refreshing the lock
 
+There are **two** distinct ways the old toolchain rejects a crate, and they
+need different checks:
+
+- **`edition2024` (manifest parse).** Fails during resolution for *any* crate in
+  the lock — including the **optional** `pyth` chain, because `--locked` parses
+  the whole graph. Verify with `cargo +1.79.0 metadata --locked` (exit 0 = no
+  edition2024 manifests anywhere in the lock).
+- **`rust-version` / MSRV (compile).** Fires only on crates actually *compiled*
+  by the default build (pyth off). `cargo metadata` does **not** catch these —
+  it only reads index summaries. Check the real compiled graph:
+  `cargo +1.79.0 tree --locked --edges normal,build` and inspect each crate's
+  `rust-version` field (must be ≤ 1.79).
+
 If you bump a dependency and need to regenerate, the pins below reproduce a
-1.79-parseable graph (verify with `cargo +1.79.0 metadata --locked`). The set
-drifts as upstream publishes new edition2024 releases; the trickiest are pulled
-in transitively by the **optional** `pyth` SDK via a second `anchor-lang`:
+graph that passes both checks. The trickiest edition2024 crates are pulled in
+transitively by the optional `pyth` SDK via a second `anchor-lang`:
 
 ```bash
 cargo generate-lockfile
@@ -65,13 +77,15 @@ cargo update -p zeroize_derive        --precise 1.4.2
 cargo update -p anchor-lang@1.1.2     --precise 0.31.1  # drop the pyth-pulled anchor 1.x
 cargo update -p proc-macro-crate@3.5.0 --precise 3.2.0  # toml_edit 0.23 -> 0.22 (drops toml_parser)
 cargo update -p indexmap@2.14.0       --precise 2.7.1   # hashbrown 0.17 -> 0.15
+cargo update -p unicode-segmentation@1.13.3 --precise 1.12.0  # MSRV 1.85 -> none (compile-time)
 ```
 
 The `@version` specs target whatever a fresh resolve picks today — adjust the
-left-hand version if cargo reports a different one. When a *new*
-`feature 'edition2024' is required` appears for some `<crate>`, find its puller
-with `cargo tree -i <crate>` and pin the closest parent back, then re-validate
-with `cargo +1.79.0 metadata --locked` and commit the updated `Cargo.lock`.
+left-hand version if cargo reports a different one. When a *new* failure appears
+for some `<crate>`: for `feature 'edition2024' is required`, or for
+`<crate> requires rustc <X>`, find its puller with `cargo tree -i <crate>`, pin
+the closest parent (or the crate itself) back, re-validate with **both** checks
+above, then commit the updated `Cargo.lock`.
 
 ### Run the tests
 
