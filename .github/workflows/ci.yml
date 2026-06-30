@@ -65,26 +65,13 @@ jobs:
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
           cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
           avm install 0.31.1 && avm use 0.31.1
-      # The Solana SBF platform-tools ship an older Rust than several current
-      # transitive crates, which now require `edition2024` (Rust 1.85). A clean
-      # resolve fails with "feature `edition2024` is required". We pin those
-      # crates back to their last pre-edition2024 release so the bundled tools
-      # (platform-tools 2.x, installed above) can build them. Keep this list in
-      # sync with templates/README.md. If a committed Cargo.lock exists,
-      # --locked uses it and these no-op.
-      - name: Pin edition2024 transitive crates
-        working-directory: templates/vault-allocator
-        run: |
-          cargo generate-lockfile
-          pin() { cargo update -p "$1" --precise "$2" || echo "skip $1 ($2 not applicable)"; }
-          pin block-buffer          0.10.4
-          pin crypto-common         0.1.6
-          pin proc-macro-crate@3.5.0 3.2.0
-          pin zeroize               1.8.1
-          pin zeroize_derive        1.4.2
-          pin blake3                1.5.5
-          pin indexmap              2.7.1
-          pin unicode-segmentation  1.12.0
-      - name: anchor build
+      # The Solana SBF platform-tools ship an older Rust (Cargo 1.79) than
+      # several current transitive crates, which now require `edition2024`
+      # (Rust 1.85), so a fresh resolve fails with "feature `edition2024` is
+      # required". The committed templates/vault-allocator/Cargo.lock pins every
+      # such crate back to its last pre-2024 release; `--locked` below enforces
+      # that lock and must NOT be regenerated here. See templates/README.md for
+      # how the lock was derived and how to refresh it.
+      - name: anchor build (uses committed Cargo.lock)
         working-directory: templates/vault-allocator
         run: anchor build --no-idl -- -- --locked

@@ -30,38 +30,48 @@ anchor build                      # SBF bytecode -> target/deploy/*.so
 
 ### Known build snag: `edition2024` / toolchain too old
 
-The Solana SBF platform-tools bundle an older Rust than several current
-transitive crates, which now require Rust 1.85 (`edition2024`). A clean build
-today fails with `feature 'edition2024' is required`. Two fixes:
+The Solana SBF platform-tools bundle an older Rust (Cargo **1.79**, even in the
+2.x platform-tools the Anza `stable` installer ships) than several current
+transitive crates, which now require Rust 1.85 (`edition2024`). A *fresh*
+resolve fails to even parse their manifests with
+`feature 'edition2024' is required`.
 
-1. Install recent platform-tools (the Anza `stable` installer ships 2.x) and
-   pin the offending crates back to their last pre-`edition2024` release:
+**This is solved by the committed `Cargo.lock`** in `vault-allocator/`. It pins
+every edition2024 crate back to its last pre-2024 release, so `anchor build`
+must be run with `--locked` (CI does this) and the lock must **not** be
+regenerated:
 
 ```bash
-cargo generate-lockfile
-cargo update -p block-buffer         --precise 0.10.4
-cargo update -p crypto-common        --precise 0.1.6
-cargo update -p proc-macro-crate@3.5.0 --precise 3.2.0
-cargo update -p zeroize              --precise 1.8.1
-cargo update -p zeroize_derive       --precise 1.4.2
-cargo update -p blake3               --precise 1.5.5
-cargo update -p indexmap             --precise 2.7.1
-cargo update -p unicode-segmentation --precise 1.12.0
-anchor build --no-idl -- -- --locked
+anchor build --no-idl -- -- --locked   # uses the committed Cargo.lock
 ```
 
 > Don't pass `--tools-version v1.50` to a 2.x toolchain — that bundle id no
 > longer resolves and `cargo-build-sbf` panics with `NotFound`. Use the tools
-> the installer ships, and pin crates instead of downgrading the toolchain.
+> the installer ships; pin crates via the lock instead of downgrading the
+> toolchain.
 
-The exact crate set drifts as upstream releases new `edition2024` versions
-(`block-buffer 0.12` is the latest to bite). When a fresh
-`feature 'edition2024' is required` appears for some `<crate>`, add
-`cargo update -p <crate> --precise <last-pre-2024-version>` to the list above
-and to `.github/workflows/ci.yml`.
+#### Refreshing the lock
 
-2. Or commit a `Cargo.lock` with the pins above so downstream builds are
-   reproducible.
+If you bump a dependency and need to regenerate, the pins below reproduce a
+1.79-parseable graph (verify with `cargo +1.79.0 metadata --locked`). The set
+drifts as upstream publishes new edition2024 releases; the trickiest are pulled
+in transitively by the **optional** `pyth` SDK via a second `anchor-lang`:
+
+```bash
+cargo generate-lockfile
+cargo update -p blake3                --precise 1.5.5   # digest 0.11 -> 0.10 (block-buffer 0.12 -> 0.10.4)
+cargo update -p zeroize               --precise 1.8.1
+cargo update -p zeroize_derive        --precise 1.4.2
+cargo update -p anchor-lang@1.1.2     --precise 0.31.1  # drop the pyth-pulled anchor 1.x
+cargo update -p proc-macro-crate@3.5.0 --precise 3.2.0  # toml_edit 0.23 -> 0.22 (drops toml_parser)
+cargo update -p indexmap@2.14.0       --precise 2.7.1   # hashbrown 0.17 -> 0.15
+```
+
+The `@version` specs target whatever a fresh resolve picks today — adjust the
+left-hand version if cargo reports a different one. When a *new*
+`feature 'edition2024' is required` appears for some `<crate>`, find its puller
+with `cargo tree -i <crate>` and pin the closest parent back, then re-validate
+with `cargo +1.79.0 metadata --locked` and commit the updated `Cargo.lock`.
 
 ### Run the tests
 
